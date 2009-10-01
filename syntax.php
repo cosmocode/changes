@@ -188,6 +188,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      */
     function isInNamespace($namespaces, $id) {
         foreach($namespaces as $ns){
+            if($ns === '') return true; //all namespaces wanted
             if((strpos($id, $ns . ':') === 0)) return true;
         }
         return false;
