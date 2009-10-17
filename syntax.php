@@ -60,7 +60,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                 if(preg_match('/(\w+)\s*=(.+)/', $m, $temp) == 1){
                     $this->handleNamedParameter($temp[1], trim($temp[2]), $data);
                 }else{
-                    $data['ns']['include'][] = cleanID($m);
+                    $this->addNamespace($data, $m);
                 }
             }
         }
@@ -77,9 +77,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         switch($name){
             case 'count': $data[$name] = intval($value); break;
             case 'ns':
-                foreach(preg_split('/\s*,\s*/', $value) as $value){
-                    $action = ($value{0} == '-')?'exclude':'include';
-                    $data[$name][$action][] = cleanID(preg_replace('/^[+-]/', '', $value));
+                foreach(explode(',', $value) as $value){
+                    $this->addNamespace($data, $value);
                 }
                 break;
             case 'type':
@@ -105,6 +104,17 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     * Clean-up the namespace name and add it (if valid) into the $data array
+     */
+    function addNamespace(&$data, $namespace) {
+        $action = ($namespace{0} == '-')?'exclude':'include';
+        $namespace = cleanID(preg_replace('/^[+-]/', '', $namespace));
+        if(!empty($namespace)){
+            $data['ns'][$action][] = $namespace;
+        }
+    }
+
+    /**
      * Create output
      */
     function render($mode, &$R, $data) {
@@ -113,7 +123,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             if(!count($changes)) return true;
 
             switch($data['render']){
-                case 'list': $this->renderSimpleList($changes, $R); break;
+                case 'list': $this->renderSimpleList($changes, $R, $data['render-flags']); break;
                 case 'pagelist': $this->renderPageList($changes, $R, $data['render-flags']); break;
             }
             return true;
@@ -188,7 +198,6 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      */
     function isInNamespace($namespaces, $id) {
         foreach($namespaces as $ns){
-            if($ns === '') return true; //all namespaces wanted
             if((strpos($id, $ns . ':') === 0)) return true;
         }
         return false;
@@ -203,7 +212,10 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             $pagelist->setFlags($flags);
             $pagelist->startList();
             foreach($changes as $change){
-                $pagelist->addPage(array('id' => $change['id']));
+                $page['id'] = $change['id'];
+                $page['date'] = $change['date'];
+                $page['user'] = $this->getUserName($change);
+                $pagelist->addPage($page);
             }
             $R->doc .= $pagelist->finishList();
         }else{
@@ -215,17 +227,64 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function renderSimpleList($changes, &$R) {
+    function renderSimpleList($changes, &$R, $flags = null) {
+        global $conf;
+        $flags = $this->parseSimpleListFlags($flags);
         $R->listu_open();
         foreach($changes as $change){
             $R->listitem_open(1);
             $R->listcontent_open();
-            $R->internallink($change['id']);
-            $R->cdata(' '.$change['sum']);
+            $R->internallink(':'.$change['id']);
+            if($flags['summary']){
+                $R->cdata(' '.$change['sum']);
+            }
+            if($flags['signature']){
+                $user = $this->getUserName($change);
+                $date = strftime($conf['dformat'], $change['date']);
+                $R->cdata(' ');
+                $R->entity('---');
+                $R->cdata(' ');
+                $R->emphasis_open();
+                $R->cdata($user.' '.$date);
+                $R->emphasis_close();
+            }
             $R->listcontent_close();
             $R->listitem_close();
         }
         $R->listu_close();
+    }
+
+    /**
+     *
+     */
+    function parseSimpleListFlags($flags) {
+        $outFlags = array('summary' => true, 'signature' => false);
+        if(!empty($flags)){
+            foreach($flags as $flag){
+                if(array_key_exists($flag, $outFlags)){
+                    $outFlags[$flag] = true;
+                }elseif(substr($flag, 0, 2) == 'no'){
+                    $flag = substr($flag, 2);
+                    if(array_key_exists($flag, $outFlags)){
+                        $outFlags[$flag] = false;
+                    }
+                }
+            }
+        }
+        return $outFlags;
+    }
+
+    /**
+     *
+     */
+    function getUserName($change) {
+        global $auth;
+        if (!empty($change['user'])){
+            $user = $auth->getUserData($change['user']);
+            return $user['name'];
+        }else{
+            return $change['ip'];
+        }
     }
 }
 
