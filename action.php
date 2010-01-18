@@ -18,7 +18,7 @@ class action_plugin_changes extends DokuWiki_Action_Plugin {
      * Return some info
      */
     function getInfo() {
-        return confToHash(dirname(__FILE__).'/info.txt');
+        return confToHash(dirname(__FILE__).'/plugin.info.txt');
     }
 
     /**

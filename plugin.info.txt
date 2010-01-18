@@ -1,5 +1,6 @@
 # General Plugin Info do not edit
 
+base   changes
 author Andreas Gohr
 email  andi@splitbrain.org
 date   2009-11-10

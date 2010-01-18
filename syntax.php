@@ -18,7 +18,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * Return some info
      */
     function getInfo(){
-        return confToHash(dirname(__FILE__).'/info.txt');
+        return confToHash(dirname(__FILE__).'/plugin.info.txt');
     }
     /**
      * What kind of syntax are we?
