@@ -3,7 +3,7 @@
 base   changes
 author Andreas Gohr
 email  andi@splitbrain.org
-date   2009-11-10
+date   2010-11-23
 name   Changes Plugin
 desc   List the most recent changes of the wiki
 url    http://www.dokuwiki.org/plugin:changes
