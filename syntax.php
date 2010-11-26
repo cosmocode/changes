@@ -185,7 +185,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         // filter user
         if(!empty($user) && (empty($change['user']) ||
-!in_array($change['user'], $user))) return false;
+                            !in_array($change['user'], $user))) return false;
 
 
         // remember in seen to skip additional sights
