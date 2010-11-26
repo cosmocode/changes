@@ -26,6 +26,14 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     function getType(){
         return 'substition';
     }
+
+    /**
+     * What type of XHTML do we create?
+     */
+    function getPType(){
+        return 'block';
+    }
+
     /**
      * Where to sort in?
      */
@@ -101,7 +109,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                 }
                 break;
            case 'user':
-           		foreach(preg_split('/\s*,\s*/', $value) as $value){
+               foreach(preg_split('/\s*,\s*/', $value) as $value){
                    $data[$name][] = $value;
                }
                break;
@@ -174,9 +182,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         // filter type
         if(!empty($type) && !in_array($change['type'], $type)) return false;
-        
+
         // filter user
-        if(!empty($user) && (empty($change['user']) || 
+        if(!empty($user) && (empty($change['user']) ||
 !in_array($change['user'], $user))) return false;
 
 
