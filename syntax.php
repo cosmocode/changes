@@ -243,13 +243,42 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     * Render the day header
+     */
+    function dayheader(&$R,$date){
+        if($R->getFormat() == 'xhtml'){
+            $R->doc .= '<h3 class="changes">';
+            $R->cdata(dformat($date,$this->getConf('dayheaderfmt')));
+            $R->doc .= '</h3>';
+        }else{
+            $R->header(dformat($date,$this->getConf('dayheaderfmt')),3,0);
+        }
+    }
+
+    /**
      *
      */
     function renderSimpleList($changes, &$R, $flags = null) {
         global $conf;
         $flags = $this->parseSimpleListFlags($flags);
+
+        if($flags['dayheaders']){
+            $date = date('Ymd',$changes[0]['date']);
+            $this->dayheader($R,$changes[0]['date']);
+        }
+
         $R->listu_open();
         foreach($changes as $change){
+            if($flags['dayheaders']){
+                $tdate = date('Ymd',$change['date']);
+                if($tdate != $date){
+                    $R->listu_close(); // break list to insert new header
+                    $this->dayheader($R,$change['date']);
+                    $R->listu_open();
+                    $date = $tdate;
+                }
+            }
+
             $R->listitem_open(1);
             $R->listcontent_open();
             $R->internallink(':'.$change['id']);
@@ -276,7 +305,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      *
      */
     function parseSimpleListFlags($flags) {
-        $outFlags = array('summary' => true, 'signature' => false);
+        $outFlags = array('summary' => true, 'signature' => false, 'dayheaders' => false);
         if(!empty($flags)){
             foreach($flags as $flag){
                 if(array_key_exists($flag, $outFlags)){
