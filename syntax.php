@@ -281,7 +281,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
             $R->listitem_open(1);
             $R->listcontent_open();
-            $R->internallink(':'.$change['id']);
+            $R->internallink(':'.$change['id'],null,null,false,'navigation');
             if($flags['summary']){
                 $R->cdata(' '.$change['sum']);
             }
