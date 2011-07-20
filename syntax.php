@@ -58,6 +58,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             'type' => array(),
             'render' => 'list',
             'render-flags' => array(),
+            'lasttime' => array()
         );
 
         $match = explode('&',$match);
@@ -113,6 +114,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                    $data[$name][] = $value;
                }
                break;
+           case 'lasttime':
+               $data[$name] = intval($value);
+               break;
         }
     }
 
@@ -132,7 +136,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      */
     function render($mode, &$R, $data) {
         if($mode == 'xhtml'){
-            $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user']);
+            $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user'], $data['lasttime']);
             if(!count($changes)) return true;
 
             switch($data['render']){
@@ -151,7 +155,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on getRecents() from inc/changelog.php
      */
-    function getChanges($num, $ns, $type, $user) {
+    function getChanges($num, $ns, $type, $user, $lasttime) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -159,7 +163,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $lines = @file($conf['changelog']);
 
         for($i = count($lines)-1; $i >= 0; $i--){
-            $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $seen);
+            $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $lasttime, $seen);
             if($change !== false){
                 $changes[] = $change;
                 // break when we have enough entries
@@ -172,7 +176,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on _handleRecent() from inc/changelog.php
      */
-    function handleChangelogLine($line, $ns, $type, $user, &$seen) {
+    function handleChangelogLine($line, $ns, $type, $user, $lasttime, &$seen) {
         // split the line into parts
         $change = parseChangelogLine($line);
         if($change===false) return false;
@@ -208,6 +212,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $change['perms'] = auth_quickaclcheck($change['id']);
         if ($change['perms'] < AUTH_READ) return false;
 
+        // filter lasttime
+        if((empty($lasttime) && $this->getConf('lasttime')!=0 && $change['date']<(time()-$this->getConf('lasttime'))) || !empty($lasttime) && $change['date']<(time()-$lasttime)){
+            return false;
+        }
+
         return $change;
     }
 
@@ -233,6 +242,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                 $page['id'] = $change['id'];
                 $page['date'] = $change['date'];
                 $page['user'] = $this->getUserName($change);
+                $page['desc'] = $change['sum'];
                 $pagelist->addPage($page);
             }
             $R->doc .= $pagelist->finishList();
@@ -335,4 +345,3 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     }
 }
 
-//Setup VIM: ex: et ts=4 enc=utf-8 :
