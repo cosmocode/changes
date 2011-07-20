@@ -58,7 +58,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             'type' => array(),
             'render' => 'list',
             'render-flags' => array(),
-            'lasttime' => array()
+            'maxage' => array()
         );
 
         $match = explode('&',$match);
@@ -114,7 +114,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                    $data[$name][] = $value;
                }
                break;
-           case 'lasttime':
+           case 'maxage':
                $data[$name] = intval($value);
                break;
         }
@@ -136,7 +136,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      */
     function render($mode, &$R, $data) {
         if($mode == 'xhtml'){
-            $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user'], $data['lasttime']);
+            $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user'], $data['maxage']);
             if(!count($changes)) return true;
 
             switch($data['render']){
@@ -155,7 +155,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on getRecents() from inc/changelog.php
      */
-    function getChanges($num, $ns, $type, $user, $lasttime) {
+    function getChanges($num, $ns, $type, $user, $maxage) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -163,7 +163,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $lines = @file($conf['changelog']);
 
         for($i = count($lines)-1; $i >= 0; $i--){
-            $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $lasttime, $seen);
+            $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $maxage, $seen);
             if($change !== false){
                 $changes[] = $change;
                 // break when we have enough entries
@@ -176,7 +176,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on _handleRecent() from inc/changelog.php
      */
-    function handleChangelogLine($line, $ns, $type, $user, $lasttime, &$seen) {
+    function handleChangelogLine($line, $ns, $type, $user, $maxage, &$seen) {
         // split the line into parts
         $change = parseChangelogLine($line);
         if($change===false) return false;
@@ -212,8 +212,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $change['perms'] = auth_quickaclcheck($change['id']);
         if ($change['perms'] < AUTH_READ) return false;
 
-        // filter lasttime
-        if((empty($lasttime) && $this->getConf('lasttime')!=0 && $change['date']<(time()-$this->getConf('lasttime'))) || !empty($lasttime) && $change['date']<(time()-$lasttime)){
+        // filter maxage
+        if((empty($maxage) && $this->getConf('maxage')!=0 && $change['date']<(time()-$this->getConf('maxage'))) || !empty($maxage) && $change['date']<(time()-$maxage)){
             return false;
         }
 
