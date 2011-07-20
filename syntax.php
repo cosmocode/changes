@@ -58,7 +58,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             'type' => array(),
             'render' => 'list',
             'render-flags' => array(),
-            'maxage' => array()
+            'maxage' => null
         );
 
         $match = explode('&',$match);
@@ -162,6 +162,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $count = 0;
         $lines = @file($conf['changelog']);
 
+        if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
+
         for($i = count($lines)-1; $i >= 0; $i--){
             $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $maxage, $seen);
             if($change !== false){
@@ -195,6 +197,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         // remember in seen to skip additional sights
         $seen[$change['id']] = 1;
 
+        // filter maxage
+        if($maxage && $change['date']<(time()-$maxage)){
+            return false;
+        }
+
         // check if it's a hidden page
         if(isHiddenPage($change['id'])) return false;
 
@@ -211,11 +218,6 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         // check ACL
         $change['perms'] = auth_quickaclcheck($change['id']);
         if ($change['perms'] < AUTH_READ) return false;
-
-        // filter maxage
-        if((empty($maxage) && $this->getConf('maxage')!=0 && $change['date']<(time()-$this->getConf('maxage'))) || !empty($maxage) && $change['date']<(time()-$maxage)){
-            return false;
-        }
 
         return $change;
     }
