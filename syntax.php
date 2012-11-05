@@ -135,7 +135,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * Create output
      */
     function render($mode, &$R, $data) {
+
         if($mode == 'xhtml'){
+            $R->info['cache'] = false;
             $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user'], $data['maxage']);
             if(!count($changes)) return true;
 
@@ -167,7 +169,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         for($i = count($lines)-1; $i >= 0; $i--){
             $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $maxage, $seen);
             if($change !== false){
-                $changes[] = $change;
+                if (!isHiddenPage($change['id'])) {
+                    $changes[] = $change;
+                }
                 // break when we have enough entries
                 if(++$count >= $num) break;
             }
