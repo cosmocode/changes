@@ -178,10 +178,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         for($i = count($lines)-1; $i >= 0; $i--){
             $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $maxage, $seen);
-            if($change !== false){
-                if (!isHiddenPage($change['id'])) {
-                    $changes[] = $change;
-                }
+            if($change !== false && page_exists($change['id'])){
+                $changes[] = $change;
                 // break when we have enough entries
                 if(++$count >= $num) break;
             }
