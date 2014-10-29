@@ -54,6 +54,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         $data = array(
             'ns' => array(),
+            'excludedpages' => array(),
             'count' => 10,
             'type' => array(),
             'render' => 'list',
@@ -81,8 +82,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * Handle parameters that are specified uing <name>=<value> syntax
      */
     function handleNamedParameter($name, $value, &$data) {
+        global $ID;
+
         static $types = array('edit' => 'E', 'create' => 'C', 'delete' => 'D', 'minor' => 'e');
         static $renderers = array('list', 'pagelist');
+
         switch($name){
             case 'count': $data[$name] = intval($value); break;
             case 'ns':
@@ -114,6 +118,14 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                    $data[$name][] = $value;
                }
                break;
+            case 'excludedpages':
+                foreach(preg_split('/\s*,\s*/', $value) as $page) {
+                    if(!empty($page)) {
+                        resolve_pageid(getNS($ID), $page, $exists);
+                        $data[$name][] = $page;
+                    }
+                }
+                break;
            case 'maxage':
                $data[$name] = intval($value);
                break;
@@ -138,7 +150,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         if($mode == 'xhtml'){
             $R->info['cache'] = false;
-            $changes = $this->getChanges($data['count'], $data['ns'], $data['type'], $data['user'], $data['maxage']);
+            $changes = $this->getChanges($data['count'], $data['ns'], $data['excludedpages'], $data['type'], $data['user'], $data['maxage']);
             if(!count($changes)) return true;
 
             switch($data['render']){
@@ -157,7 +169,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on getRecents() from inc/changelog.php
      */
-    function getChanges($num, $ns, $type, $user, $maxage) {
+    function getChanges($num, $ns, $excludedpages, $type, $user, $maxage) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -177,7 +189,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
 
         for($i = count($lines)-1; $i >= 0; $i--){
-            $change = $this->handleChangelogLine($lines[$i], $ns, $type, $user, $maxage, $seen);
+            $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $user, $maxage, $seen);
             if($change !== false){
                 if (!isHiddenPage($change['id'])) {
                     $changes[] = $change;
@@ -202,7 +214,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
     /**
      * Based on _handleRecent() from inc/changelog.php
      */
-    function handleChangelogLine($line, $ns, $type, $user, $maxage, &$seen) {
+    function handleChangelogLine($line, $ns, $excludedpages, $type, $user, $maxage, &$seen) {
         // split the line into parts
         $change = parseChangelogLine($line);
         if($change===false) return false;
@@ -237,6 +249,12 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         // filter excluded namespaces
         if(isset($ns['exclude'])){
             if($this->isInNamespace($ns['exclude'], $change['id'])) return false;
+        }
+        // exclude pages
+        if(!empty($excludedpages)) {
+            foreach($excludedpages as $page) {
+                if($change['id'] == $page) return false;
+            }
         }
 
         // check ACL
