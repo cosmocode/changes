@@ -259,12 +259,13 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         if(!empty($type) && !in_array($change['type'], $type)) return false;
 
         // filter user
-        if(!empty($user) && (empty($change['user']) ||
-                !in_array($change['user'], $user))
-        ) return false;
+        if(!empty($user) && (empty($change['user']) || !in_array($change['user'], $user))) return false;
 
         // remember in seen to skip additional sights
         $seen[$change['id']] = 1;
+
+        // show only not existing pages for delete
+        if($change['type'] != 'D' && !page_exists($change['id'])) return false;
 
         // filter maxage
         if($maxage && $change['date'] < (time() - $maxage)) {
