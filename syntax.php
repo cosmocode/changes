@@ -365,9 +365,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         global $conf;
         $flags = $this->parseSimpleListFlags($flags);
 
-        $date = '';
+        $dayheaders_date = '';
         if($flags['dayheaders']) {
-            $date = date('Ymd', $changes[0]['date']);
+            $dayheaders_date = date('Ymd', $changes[0]['date']);
             $this->dayheader($R, $changes[0]['date']);
         }
 
@@ -375,11 +375,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         foreach($changes as $change) {
             if($flags['dayheaders']) {
                 $tdate = date('Ymd', $change['date']);
-                if($tdate != $date) {
+                if($tdate != $dayheaders_date) {
                     $R->listu_close(); // break list to insert new header
                     $this->dayheader($R, $change['date']);
                     $R->listu_open();
-                    $date = $tdate;
+                    $dayheaders_date = $tdate;
                 }
             }
 
