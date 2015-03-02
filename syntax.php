@@ -118,8 +118,10 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                 }
                 break;
             case 'user':
+            case 'userexclude':
                 foreach(preg_split('/\s*,\s*/', $value) as $value) {
-                    $data[$name][] = $value;
+                    $action = ($name == 'user') ? 'include' : 'exclude';
+                    $data['user'][$action][] = $value;
                 }
                 break;
             case 'excludedpages':
@@ -189,11 +191,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * @param array $ns
      * @param array $excludedpages
      * @param array $type
-     * @param array $user
+     * @param array $users
      * @param int   $maxage
      * @return array
      */
-    protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage) {
+    protected function getChanges($num, $ns, $excludedpages, $type, $users, $maxage) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -213,7 +215,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
 
         for($i = count($lines) - 1; $i >= 0; $i--) {
-            $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $user, $maxage, $seen);
+            $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $users, $maxage, $seen);
             if($change !== false) {
                 $changes[] = $change;
                 // break when we have enough entries
@@ -240,12 +242,12 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * @param array  $ns
      * @param array  $excludedpages
      * @param array  $type
-     * @param array  $user
+     * @param array  $users
      * @param int    $maxage
      * @param array  $seen
      * @return array|bool
      */
-    protected function handleChangelogLine($line, $ns, $excludedpages, $type, $user, $maxage, &$seen) {
+    protected function handleChangelogLine($line, $ns, $excludedpages, $type, $users, $maxage, &$seen) {
         // split the line into parts
         $change = parseChangelogLine($line);
         if($change === false) return false;
@@ -256,8 +258,14 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         // filter type
         if(!empty($type) && !in_array($change['type'], $type)) return false;
 
-        // filter user
-        if(!empty($user) && (empty($change['user']) || !in_array($change['user'], $user))) return false;
+        // filter included users
+        if(isset($users['include'])) {
+            if(empty($change['user']) || !in_array($change['user'], $users['include'])) return false;
+        }
+        // filter excluded users
+        if(isset($users['exclude'])) {
+            if(in_array($change['user'], $users['exclude'])) return false;
+        }       
 
         // remember in seen to skip additional sights
         $seen[$change['id']] = 1;
