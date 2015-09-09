@@ -39,6 +39,15 @@ class action_plugin_changes extends DokuWiki_Action_Plugin {
      * Add extra dependencies to the cache
      */
     protected function addDependencies($cache, $depends) {
+
+        // Prevent "Warning: in_array() expects parameter 2 to be array, null given"
+        if (!is_array($cache->depends)) {
+            $cache->depends = array();
+        }
+        if (!array_key_exists('files', $cache->depends)) {
+            $cache->depends['files'] = array();
+        }
+
         foreach($depends as $file){
             if(!in_array($file, $cache->depends['files']) && @file_exists($file)){
                 $cache->depends['files'][] = $file;
