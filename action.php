@@ -17,7 +17,7 @@ class action_plugin_changes extends DokuWiki_Action_Plugin {
     /**
      * Register callbacks
      */
-    public function register($controller) {
+    public function register(Doku_Event_Handler $controller) {
       $controller->register_hook('PARSER_CACHE_USE', 'BEFORE', $this, 'beforeParserCacheUse');
     }
 
