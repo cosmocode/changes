@@ -198,16 +198,23 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $changes = array();
         $seen = array();
         $count = 0;
-        $lines = @file($conf['changelog']);
+        $lines = array();
+
+        // Get global changelog
+        if(file_exists($conf['changelog']) && is_readable($conf['changelog'])) {
+            $lines = @file($conf['changelog']);
+        }
 
         // Merge media changelog
         if($this->getConf('listmedia')) {
-            $linesMedia = @file($conf['media_changelog']);
-            // Add a tag to identiy the media lines
-            foreach($linesMedia as $key => $value) {
-                $linesMedia[$key] = $value . "media";
+            if(file_exists($conf['media_changelog']) && is_readable($conf['media_changelog'])) {
+                $linesMedia = @file($conf['media_changelog']);
+                // Add a tag to identiy the media lines
+                foreach($linesMedia as $key => $value) {
+                    $linesMedia[$key] = $value . "media";
+                }
+                $lines = array_merge($lines, $linesMedia);
             }
-            $lines = array_merge($lines, $linesMedia);
         }
 
         if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
