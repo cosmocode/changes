@@ -333,6 +333,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             $pagelist->setFlags($flags);
             $pagelist->startList();
             foreach($changes as $change) {
+                if ($change['extra'] == 'media') continue;
                 $page['id'] = $change['id'];
                 $page['date'] = $change['date'];
                 $page['user'] = $this->getUserName($change);
