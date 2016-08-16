@@ -272,7 +272,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $seen[$change['id']] = 1;
 
         // show only not existing pages for delete
-        if($change['type'] != 'D' && !page_exists($change['id'])) return false;
+        if($change['extra'] != 'media' && $change['type'] != 'D' && !page_exists($change['id'])) return false;
 
         // filter maxage
         if($maxage && $change['date'] < (time() - $maxage)) {
