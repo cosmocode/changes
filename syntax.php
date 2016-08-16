@@ -211,7 +211,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
                 $linesMedia = @file($conf['media_changelog']);
                 // Add a tag to identiy the media lines
                 foreach($linesMedia as $key => $value) {
-                    $linesMedia[$key] = $value . "media";
+                    $value = parseChangelogLine($value);
+                    $value['extra'] = 'media';
+                    $linesMedia[$key] = implode("\t", $value)."\n";
                 }
                 $lines = array_merge($lines, $linesMedia);
             }
