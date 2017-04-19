@@ -203,16 +203,25 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $changes = array();
         $seen = array();
         $count = 0;
-        $lines = @file($conf['changelog']);
+        $lines = array();
+
+        // Get global changelog
+        if(file_exists($conf['changelog']) && is_readable($conf['changelog'])) {
+            $lines = @file($conf['changelog']);
+        }
 
         // Merge media changelog
         if($this->getConf('listmedia')) {
-            $linesMedia = @file($conf['media_changelog']);
-            // Add a tag to identiy the media lines
-            foreach($linesMedia as $key => $value) {
-                $linesMedia[$key] = $value . "media";
+            if(file_exists($conf['media_changelog']) && is_readable($conf['media_changelog'])) {
+                $linesMedia = @file($conf['media_changelog']);
+                // Add a tag to identiy the media lines
+                foreach($linesMedia as $key => $value) {
+                    $value = parseChangelogLine($value);
+                    $value['extra'] = 'media';
+                    $linesMedia[$key] = implode("\t", $value)."\n";
+                }
+                $lines = array_merge($lines, $linesMedia);
             }
-            $lines = array_merge($lines, $linesMedia);
         }
 
         if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
@@ -268,7 +277,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         $seen[$change['id']] = 1;
 
         // show only not existing pages for delete
-        if($change['type'] != 'D' && !page_exists($change['id'])) return false;
+        if($change['extra'] != 'media' && $change['type'] != 'D' && !page_exists($change['id'])) return false;
 
         // filter maxage
         if($maxage && $change['date'] < (time() - $maxage)) {
@@ -336,6 +345,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             $pagelist->setFlags($flags);
             $pagelist->startList();
             foreach($changes as $change) {
+                if ($change['extra'] == 'media') continue;
                 $page['id'] = $change['id'];
                 $page['date'] = $change['date'];
                 $page['user'] = $this->getUserName($change);
