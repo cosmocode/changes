@@ -2,7 +2,7 @@
 
 /**
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * 
+ *
  * @author Aleksander Setlak <http://alek.magazynek.org>
  * @author Mati <mackosa@wp.pl>
  */
