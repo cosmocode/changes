@@ -61,7 +61,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             'type' => array(),
             'render' => 'list',
             'render-flags' => array(),
-            'maxage' => null
+            'maxage' => null,
+            'reverse' => false
         );
 
         $match = explode('&', $match);
@@ -138,6 +139,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             case 'maxage':
                 $data[$name] = intval($value);
                 break;
+            case 'reverse':
+                $data[$name] = (bool)$value;
+                break;
         }
     }
 
@@ -165,7 +169,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         if($mode == 'xhtml') {
             /* @var Doku_Renderer_xhtml $R */
             $R->info['cache'] = false;
-            $changes = $this->getChanges($data['count'], $data['ns'], $data['excludedpages'], $data['type'], $data['user'], $data['maxage'], $data['excludedusers']);
+            $changes = $this->getChanges($data['count'], $data['ns'], $data['excludedpages'], $data['type'], $data['user'], $data['maxage'], $data['excludedusers'], $data['reverse']);
             if(!count($changes)) return true;
 
             switch($data['render']) {
@@ -198,7 +202,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * @param int   $maxage
      * @return array
      */
-    protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage, $excludedusers) {
+    protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage, $excludedusers, $reverse) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -236,12 +240,12 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         }
 
         // Date sort merged page and media changes
-        if($this->getConf('listmedia')) {
+        if($this->getConf('listmedia') || $reverse) {
             $dates = array();
             foreach($changes as $change) {
                 $dates[] = $change['date'];
             }
-            array_multisort($dates, SORT_ASC, $changes);
+            array_multisort($dates, ($reverse ? SORT_ASC : SORT_DESC), $changes);
         }
 
         return $changes;
