@@ -408,7 +408,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             $R->listitem_open(1);
             $R->listcontent_open();
             if(trim($change['extra']) == 'media') {
-                $R->internalmedia(':' . $change['id'], null, null, false, 'navigation');
+                $R->internalmedia(':' . $change['id'], null, null, null, null, null, 'linkonly');
             } else {
                 $R->internallink(':' . $change['id'], null, null, false, 'navigation');
             }
