@@ -224,7 +224,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             }
         }
 
-        if(is_null($maxage)) $maxage = (int) $this->getConf('maxage');
+        if(is_null($maxage)) {
+            $maxage = (int) $conf['recent_days'] * 60 * 60 * 24;
+        }
 
         for($i = count($lines) - 1; $i >= 0; $i--) {
             $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $user, $maxage, $seen, $excludedusers);
