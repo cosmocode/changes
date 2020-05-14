@@ -62,7 +62,8 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             'render' => 'list',
             'render-flags' => array(),
             'maxage' => null,
-            'reverse' => false
+            'reverse' => false,
+            'minage' => null
         );
 
         $match = explode('&', $match);
@@ -139,6 +140,9 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
             case 'maxage':
                 $data[$name] = intval($value);
                 break;
+            case 'minage':
+                $data[$name] = intval($value);
+                break;
             case 'reverse':
                 $data[$name] = (bool)$value;
                 break;
@@ -169,7 +173,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         if($mode == 'xhtml') {
             /* @var Doku_Renderer_xhtml $R */
             $R->info['cache'] = false;
-            $changes = $this->getChanges($data['count'], $data['ns'], $data['excludedpages'], $data['type'], $data['user'], $data['maxage'], $data['excludedusers'], $data['reverse']);
+            $changes = $this->getChanges($data['count'], $data['ns'], $data['excludedpages'], $data['type'], $data['user'], $data['maxage'], $data['excludedusers'], $data['reverse'], $data['minage']);
             if(!count($changes)) return true;
 
             switch($data['render']) {
@@ -202,7 +206,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * @param int   $maxage
      * @return array
      */
-    protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage, $excludedusers, $reverse) {
+    protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage, $excludedusers, $reverse, $minage) {
         global $conf;
         $changes = array();
         $seen = array();
@@ -233,7 +237,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
         }
 
         for($i = count($lines) - 1; $i >= 0; $i--) {
-            $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $user, $maxage, $seen, $excludedusers);
+            $change = $this->handleChangelogLine($lines[$i], $ns, $excludedpages, $type, $user, $maxage, $seen, $excludedusers, $minage);
             if($change !== false) {
                 $changes[] = $change;
                 // break when we have enough entries
@@ -265,7 +269,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * @param array  $seen
      * @return array|bool
      */
-    protected function handleChangelogLine($line, $ns, $excludedpages, $type, $user, $maxage, &$seen, $excludedusers) {
+    protected function handleChangelogLine($line, $ns, $excludedpages, $type, $user, $maxage, &$seen, $excludedusers,$minage) {
         // split the line into parts
         $change = parseChangelogLine($line);
         if($change === false) return false;
@@ -287,6 +291,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
 
         // filter maxage
         if($maxage && $change['date'] < (time() - $maxage)) {
+            return false;
+        }
+
+        // filter minimum age
+        if($minage && $change['date'] > (time() - $minage)) {
             return false;
         }
 
