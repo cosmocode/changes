@@ -58,16 +58,18 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
     {
         $match = substr($match, 10, -2);
 
-        $data = array(
-            'ns' => array(),
-            'excludedpages' => array(),
+        $data = [
+            'ns' => [],
+            'excludedpages' => [],
             'count' => 10,
-            'type' => array(),
+            'type' => [],
             'render' => 'list',
-            'render-flags' => array(),
+            'render-flags' => [],
             'maxage' => null,
-            'reverse' => false
-        );
+            'reverse' => false,
+            'user' => [],
+            'excludedusers' => [],
+        ];
 
         $match = explode('&', $match);
         foreach ($match as $m) {
@@ -100,6 +102,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
 
         switch ($name) {
             case 'count':
+            case 'maxage':
                 $data[$name] = intval($value);
                 break;
             case 'ns':
@@ -127,10 +130,6 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
                 }
                 break;
             case 'user':
-                foreach (preg_split('/\s*,\s*/', $value) as $value) {
-                    $data[$name][] = $value;
-                }
-                break;
             case 'excludedusers':
                 foreach (preg_split('/\s*,\s*/', $value) as $value) {
                     $data[$name][] = $value;
@@ -144,9 +143,6 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
                     }
                 }
                 break;
-            case 'maxage':
-                $data[$name] = intval($value);
-                break;
             case 'reverse':
                 $data[$name] = (bool)$value;
                 break;
@@ -155,9 +151,12 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
 
     /**
      * Clean-up the namespace name and add it (if valid) into the $data array
+     * @param array $data
+     * @param string $namespace
      */
     protected function addNamespace(&$data, $namespace)
     {
+        if (empty($namespace)) return;
         $action = ($namespace[0] == '-') ? 'exclude' : 'include';
         $namespace = cleanID(preg_replace('/^[+-]/', '', $namespace));
         if (!empty($namespace)) {
@@ -168,14 +167,14 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
     /**
      * Handles the actual output creation.
      *
-     * @param   $mode   string        output format being rendered
-     * @param   $R Doku_Renderer the current renderer object
-     * @param   $data     array         data created by handler()
+     * @param string $mode output format being rendered
+     * @param Doku_Renderer $R the current renderer object
+     * @param array $data data created by handler()
      * @return  boolean                 rendered correctly?
      */
     public function render($mode, Doku_Renderer $R, $data)
     {
-        if ($mode == 'xhtml') {
+        if ($mode === 'xhtml') {
             /* @var Doku_Renderer_xhtml $R */
             $R->info['cache'] = false;
             $changes = $this->getChanges(
@@ -199,7 +198,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
                     break;
             }
             return true;
-        } elseif ($mode == 'metadata') {
+        } elseif ($mode === 'metadata') {
             /* @var Doku_Renderer_metadata $R */
             global $conf;
             $R->meta['relation']['depends']['rendering'][$conf['changelog']] = true;
