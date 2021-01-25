@@ -149,7 +149,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin {
      * Clean-up the namespace name and add it (if valid) into the $data array
      */
     protected function addNamespace(&$data, $namespace) {
-        $action = ($namespace{0} == '-') ? 'exclude' : 'include';
+        $action = ($namespace[0] == '-') ? 'exclude' : 'include';
         $namespace = cleanID(preg_replace('/^[+-]/', '', $namespace));
         if(!empty($namespace)) {
             $data['ns'][$action][] = $namespace;
