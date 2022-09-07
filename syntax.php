@@ -119,7 +119,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
                 break;
             case 'render':
                 // parse "name(flag1, flag2)" syntax
-                if (preg_match('/(\w+)(?:\((.*)\))?/', $value, $match) == 1) {
+                if (preg_match('/(\w+)(?:\((.*)\))?/', $value, $match) === 1) {
                     if (in_array($match[1], $renderers)) {
                         $data[$name] = $match[1];
                         $flags = trim($match[2]);
