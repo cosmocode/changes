@@ -122,9 +122,11 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
                 if (preg_match('/(\w+)(?:\((.*)\))?/', $value, $match) == 1) {
                     if (in_array($match[1], $renderers)) {
                         $data[$name] = $match[1];
-                        $flags = trim($match[2]);
-                        if ($flags != '') {
-                            $data['render-flags'] = preg_split('/\s*,\s*/', $flags);
+                        if (count($match) > 2) {
+                            $flags = trim($match[2]);
+                            if ($flags != '') {
+                                $data['render-flags'] = preg_split('/\s*,\s*/', $flags);
+                            }
                         }
                     }
                 }
