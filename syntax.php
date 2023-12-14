@@ -1,4 +1,7 @@
 <?php
+
+use dokuwiki\Extension\SyntaxPlugin;
+
 /**
  * Changes Plugin: List the most recent changes of the wiki
  *
@@ -6,11 +9,10 @@
  * @author     Andreas Gohr <andi@splitbrain.org>
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
-
 /**
  * Class syntax_plugin_changes
  */
-class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
+class syntax_plugin_changes extends SyntaxPlugin
 {
     /**
      * What kind of syntax are we?
@@ -75,12 +77,10 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
         foreach ($match as $m) {
             if (is_numeric($m)) {
                 $data['count'] = (int) $m;
+            } elseif (preg_match('/(\w+)\s*=(.+)/', $m, $temp) == 1) {
+                $this->handleNamedParameter($temp[1], trim($temp[2]), $data);
             } else {
-                if (preg_match('/(\w+)\s*=(.+)/', $m, $temp) == 1) {
-                    $this->handleNamedParameter($temp[1], trim($temp[2]), $data);
-                } else {
-                    $this->addNamespace($data, trim($m));
-                }
+                $this->addNamespace($data, trim($m));
             }
         }
 
@@ -97,13 +97,13 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
     {
         global $ID;
 
-        static $types = array('edit' => 'E', 'create' => 'C', 'delete' => 'D', 'minor' => 'e');
-        static $renderers = array('list', 'pagelist');
+        static $types = ['edit' => 'E', 'create' => 'C', 'delete' => 'D', 'minor' => 'e'];
+        static $renderers = ['list', 'pagelist'];
 
         switch ($name) {
             case 'count':
             case 'maxage':
-                $data[$name] = intval($value);
+                $data[$name] = (int) $value;
                 break;
             case 'ns':
                 foreach (preg_split('/\s*,\s*/', $value) as $value) {
@@ -223,10 +223,10 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
     protected function getChanges($num, $ns, $excludedpages, $type, $user, $maxage, $excludedusers, $reverse)
     {
         global $conf;
-        $changes = array();
-        $seen = array();
+        $changes = [];
+        $seen = [];
         $count = 0;
-        $lines = array();
+        $lines = [];
 
         // Get global changelog
         if (file_exists($conf['changelog']) && is_readable($conf['changelog'])) {
@@ -271,7 +271,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
 
         // Date sort merged page and media changes
         if ($this->getConf('listmedia') || $reverse) {
-            $dates = array();
+            $dates = [];
             foreach ($changes as $change) {
                 $dates[] = $change['date'];
             }
@@ -436,7 +436,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
         foreach ($changes as $change) {
             if ($flags['dayheaders']) {
                 $tdate = date('Ymd', $change['date']);
-                if ($tdate != $dayheaders_date) {
+                if ($tdate !== $dayheaders_date) {
                     $R->listu_close(); // break list to insert new header
                     $this->dayheader($R, $change['date']);
                     $R->listu_open();
@@ -478,7 +478,7 @@ class syntax_plugin_changes extends DokuWiki_Syntax_Plugin
      */
     protected function parseSimpleListFlags($flags)
     {
-        $outFlags = array('summary' => true, 'signature' => false, 'dayheaders' => false);
+        $outFlags = ['summary' => true, 'signature' => false, 'dayheaders' => false];
         if (!empty($flags)) {
             foreach ($flags as $flag) {
                 if (array_key_exists($flag, $outFlags)) {

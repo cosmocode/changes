@@ -1,5 +1,9 @@
 <?php
 
+use dokuwiki\Extension\ActionPlugin;
+use dokuwiki\Extension\EventHandler;
+use dokuwiki\Extension\Event;
+
 /**
  * Changes Plugin: List the most recent changes of the wiki
  *
@@ -11,20 +15,20 @@
 /**
  * Class action_plugin_changes
  */
-class action_plugin_changes extends DokuWiki_Action_Plugin
+class action_plugin_changes extends ActionPlugin
 {
     /**
      * Register callbacks
-     * @param Doku_Event_Handler $controller
+     * @param EventHandler $controller
      */
-    public function register(Doku_Event_Handler $controller)
+    public function register(EventHandler $controller)
     {
         $controller->register_hook('PARSER_CACHE_USE', 'BEFORE', $this, 'beforeParserCacheUse');
     }
 
     /**
      * Handle PARSER_CACHE_USE:BEFORE event
-     * @param Doku_Event $event
+     * @param Event $event
      */
     public function beforeParserCacheUse($event)
     {
@@ -45,10 +49,10 @@ class action_plugin_changes extends DokuWiki_Action_Plugin
     {
         // Prevent "Warning: in_array() expects parameter 2 to be array, null given"
         if (!is_array($cache->depends)) {
-            $cache->depends = array();
+            $cache->depends = [];
         }
         if (!array_key_exists('files', $cache->depends)) {
-            $cache->depends['files'] = array();
+            $cache->depends['files'] = [];
         }
 
         foreach ($depends as $file) {
