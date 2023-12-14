@@ -1,6 +1,8 @@
 <?php
 
+use dokuwiki\ChangeLog\ChangeLog;
 use dokuwiki\Extension\SyntaxPlugin;
+use dokuwiki\File\PageResolver;
 
 /**
  * Changes Plugin: List the most recent changes of the wiki
@@ -140,8 +142,7 @@ class syntax_plugin_changes extends SyntaxPlugin
             case 'excludedpages':
                 foreach (preg_split('/\s*,\s*/', $value) as $page) {
                     if (!empty($page)) {
-                        resolve_pageid(getNS($ID), $page, $exists);
-                        $data[$name][] = $page;
+                        $data[$name][] = (new PageResolver($ID))->resolveId($page);
                     }
                 }
                 break;
@@ -169,16 +170,16 @@ class syntax_plugin_changes extends SyntaxPlugin
     /**
      * Handles the actual output creation.
      *
-     * @param string $mode output format being rendered
-     * @param Doku_Renderer $R the current renderer object
+     * @param string $format output format being rendered
+     * @param Doku_Renderer $renderer the current renderer object
      * @param array $data data created by handler()
-     * @return  boolean                 rendered correctly?
+     * @return  boolean rendered correctly?
      */
-    public function render($mode, Doku_Renderer $R, $data)
+    public function render($format, Doku_Renderer $renderer, $data)
     {
-        if ($mode === 'xhtml') {
-            /* @var Doku_Renderer_xhtml $R */
-            $R->info['cache'] = false;
+        if ($format === 'xhtml') {
+            /* @var Doku_Renderer_xhtml $renderer */
+            $renderer->info['cache'] = false;
             $changes = $this->getChanges(
                 $data['count'],
                 $data['ns'],
@@ -193,17 +194,17 @@ class syntax_plugin_changes extends SyntaxPlugin
 
             switch ($data['render']) {
                 case 'list':
-                    $this->renderSimpleList($changes, $R, $data['render-flags']);
+                    $this->renderSimpleList($changes, $renderer, $data['render-flags']);
                     break;
                 case 'pagelist':
-                    $this->renderPageList($changes, $R, $data['render-flags']);
+                    $this->renderPageList($changes, $renderer, $data['render-flags']);
                     break;
             }
             return true;
-        } elseif ($mode === 'metadata') {
-            /* @var Doku_Renderer_metadata $R */
+        } elseif ($format === 'metadata') {
+            /* @var Doku_Renderer_metadata $renderer */
             global $conf;
-            $R->meta['relation']['depends']['rendering'][$conf['changelog']] = true;
+            $renderer->meta['relation']['depends']['rendering'][$conf['changelog']] = true;
             return true;
         }
         return false;
@@ -239,7 +240,7 @@ class syntax_plugin_changes extends SyntaxPlugin
                 $linesMedia = @file($conf['media_changelog']);
                 // Add a tag to identiy the media lines
                 foreach ($linesMedia as $key => $value) {
-                    $value = parseChangelogLine($value);
+                    $value = ChangeLog::parseLogLine($value);
                     $value['extra'] = 'media';
                     $linesMedia[$key] = implode("\t", $value) . "\n";
                 }
@@ -296,7 +297,7 @@ class syntax_plugin_changes extends SyntaxPlugin
     protected function handleChangelogLine($line, $ns, $excludedpages, $type, $user, $maxage, &$seen, $excludedusers)
     {
         // split the line into parts
-        $change = parseChangelogLine($line);
+        $change = ChangeLog::parseLogLine($line);
         if ($change === false) return false;
 
         // skip seen ones
@@ -333,8 +334,8 @@ class syntax_plugin_changes extends SyntaxPlugin
         }
         // exclude pages
         if (!empty($excludedpages)) {
-            foreach ($excludedpages as $page) {
-                if ($change['id'] == $page) return false;
+            if (in_array($change['id'], $excludedpages)) {
+                return false;
             }
         }
 
@@ -371,10 +372,10 @@ class syntax_plugin_changes extends SyntaxPlugin
      * Render via the Pagelist plugin
      *
      * @param $changes
-     * @param Doku_Renderer_xhtml $R
+     * @param Doku_Renderer_xhtml $renderer
      * @param $flags
      */
-    protected function renderPageList($changes, &$R, $flags)
+    protected function renderPageList($changes, $renderer, $flags)
     {
         /** @var helper_plugin_pagelist $pagelist */
         $pagelist = @plugin_load('helper', 'pagelist');
@@ -389,28 +390,28 @@ class syntax_plugin_changes extends SyntaxPlugin
                 $page['desc'] = $change['sum'];
                 $pagelist->addPage($page);
             }
-            $R->doc .= $pagelist->finishList();
+            $renderer->doc .= $pagelist->finishList();
         } else {
             // Fallback to the simple list renderer
-            $this->renderSimpleList($changes, $R);
+            $this->renderSimpleList($changes, $renderer);
         }
     }
 
     /**
      * Render the day header
      *
-     * @param Doku_Renderer $R
+     * @param Doku_Renderer $renderer
      * @param int $date
      */
-    protected function dayheader(&$R, $date)
+    protected function dayheader($renderer, $date)
     {
-        if ($R->getFormat() == 'xhtml') {
-            /* @var Doku_Renderer_xhtml $R  */
-            $R->doc .= '<h3 class="changes">';
-            $R->cdata(dformat($date, $this->getConf('dayheaderfmt')));
-            $R->doc .= '</h3>';
+        if ($renderer->getFormat() == 'xhtml') {
+            /* @var Doku_Renderer_xhtml $renderer  */
+            $renderer->doc .= '<h3 class="changes">';
+            $renderer->cdata(dformat($date, $this->getConf('dayheaderfmt')));
+            $renderer->doc .= '</h3>';
         } else {
-            $R->header(dformat($date, $this->getConf('dayheaderfmt')), 3, 0);
+            $renderer->header(dformat($date, $this->getConf('dayheaderfmt')), 3, 0);
         }
     }
 
@@ -418,10 +419,10 @@ class syntax_plugin_changes extends SyntaxPlugin
      * Render with a simple list render
      *
      * @param array $changes
-     * @param Doku_Renderer_xhtml $R
-     * @param null $flags
+     * @param Doku_Renderer_xhtml $renderer
+     * @param array $flags
      */
-    protected function renderSimpleList($changes, &$R, $flags = null)
+    protected function renderSimpleList($changes, $renderer, $flags = [])
     {
         global $conf;
         $flags = $this->parseSimpleListFlags($flags);
@@ -429,45 +430,45 @@ class syntax_plugin_changes extends SyntaxPlugin
         $dayheaders_date = '';
         if ($flags['dayheaders']) {
             $dayheaders_date = date('Ymd', $changes[0]['date']);
-            $this->dayheader($R, $changes[0]['date']);
+            $this->dayheader($renderer, $changes[0]['date']);
         }
 
-        $R->listu_open();
+        $renderer->listu_open();
         foreach ($changes as $change) {
             if ($flags['dayheaders']) {
                 $tdate = date('Ymd', $change['date']);
                 if ($tdate !== $dayheaders_date) {
-                    $R->listu_close(); // break list to insert new header
-                    $this->dayheader($R, $change['date']);
-                    $R->listu_open();
+                    $renderer->listu_close(); // break list to insert new header
+                    $this->dayheader($renderer, $change['date']);
+                    $renderer->listu_open();
                     $dayheaders_date = $tdate;
                 }
             }
 
-            $R->listitem_open(1);
-            $R->listcontent_open();
+            $renderer->listitem_open(1);
+            $renderer->listcontent_open();
             if (trim($change['extra']) == 'media') {
-                $R->internalmedia(':' . $change['id'], null, null, null, null, null, 'linkonly');
+                $renderer->internalmedia(':' . $change['id'], null, null, null, null, null, 'linkonly');
             } else {
-                $R->internallink(':' . $change['id'], null, null, false, 'navigation');
+                $renderer->internallink(':' . $change['id'], null, null, false, 'navigation');
             }
             if ($flags['summary']) {
-                $R->cdata(' ' . $change['sum']);
+                $renderer->cdata(' ' . $change['sum']);
             }
             if ($flags['signature']) {
                 $user = $this->getUserName($change);
                 $date = strftime($conf['dformat'], $change['date']);
-                $R->cdata(' ');
-                $R->entity('---');
-                $R->cdata(' ');
-                $R->emphasis_open();
-                $R->cdata($user . ' ' . $date);
-                $R->emphasis_close();
+                $renderer->cdata(' ');
+                $renderer->entity('---');
+                $renderer->cdata(' ');
+                $renderer->emphasis_open();
+                $renderer->cdata($user . ' ' . $date);
+                $renderer->emphasis_close();
             }
-            $R->listcontent_close();
-            $R->listitem_close();
+            $renderer->listcontent_close();
+            $renderer->listitem_close();
         }
-        $R->listu_close();
+        $renderer->listu_close();
     }
 
     /**
