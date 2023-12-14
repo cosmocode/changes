@@ -177,9 +177,10 @@ class syntax_plugin_changes extends SyntaxPlugin
      */
     public function render($format, Doku_Renderer $renderer, $data)
     {
+        global $conf;
+
         if ($format === 'xhtml') {
             /* @var Doku_Renderer_xhtml $renderer */
-            $renderer->info['cache'] = false;
             $changes = $this->getChanges(
                 $data['count'],
                 $data['ns'],
@@ -203,8 +204,8 @@ class syntax_plugin_changes extends SyntaxPlugin
             return true;
         } elseif ($format === 'metadata') {
             /* @var Doku_Renderer_metadata $renderer */
-            global $conf;
             $renderer->meta['relation']['depends']['rendering'][$conf['changelog']] = true;
+            $renderer->meta['relation']['depends']['rendering'][$conf['media_changelog']] = true;
             return true;
         }
         return false;
