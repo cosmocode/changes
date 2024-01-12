@@ -458,13 +458,21 @@ class syntax_plugin_changes extends SyntaxPlugin
             }
             if ($flags['signature']) {
                 $user = $this->getUserName($change);
-                $date = strftime($conf['dformat'], $change['date']);
                 $renderer->cdata(' ');
                 $renderer->entity('---');
                 $renderer->cdata(' ');
                 $renderer->emphasis_open();
-                $renderer->cdata($user . ' ' . $date);
+                $renderer->cdata($user . ' ');
                 $renderer->emphasis_close();
+            }
+            if ($flags['date']) {
+                //$date = strftime($conf['dformat'], $change['date']);
+                $date = strftime($this->getConf('datefmt'), $change['date']);
+                $renderer->cdata(' ' . $date);
+            }
+            if ($flags['time']) {
+                $time = strftime($this->getConf('timefmt'), $change['date']);
+                $renderer->cdata(' ' . $time);
             }
             $renderer->listcontent_close();
             $renderer->listitem_close();
@@ -480,7 +488,7 @@ class syntax_plugin_changes extends SyntaxPlugin
      */
     protected function parseSimpleListFlags($flags)
     {
-        $outFlags = ['summary' => true, 'signature' => false, 'dayheaders' => false];
+        $outFlags = ['summary' => true, 'signature' => false, 'dayheaders' => false, 'date' => false, 'time' => false];
         if (!empty($flags)) {
             foreach ($flags as $flag) {
                 if (array_key_exists($flag, $outFlags)) {
