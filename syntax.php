@@ -446,12 +446,17 @@ class syntax_plugin_changes extends SyntaxPlugin
                 }
             }
 
+            $title = null;
+            if ($flags['firstheading']) {
+                $title = p_get_first_heading($change['id']);
+            }
+
             $renderer->listitem_open(1);
             $renderer->listcontent_open();
             if (trim($change['extra']) == 'media') {
                 $renderer->internalmedia(':' . $change['id'], null, null, null, null, null, 'linkonly');
             } else {
-                $renderer->internallink(':' . $change['id'], null, null, false, 'navigation');
+                $renderer->internallink(':' . $change['id'], $title, null, false, 'navigation');
             }
             if ($flags['summary']) {
                 $renderer->cdata(' ' . $change['sum']);
@@ -480,7 +485,7 @@ class syntax_plugin_changes extends SyntaxPlugin
      */
     protected function parseSimpleListFlags($flags)
     {
-        $outFlags = ['summary' => true, 'signature' => false, 'dayheaders' => false];
+        $outFlags = ['summary' => true, 'signature' => false, 'dayheaders' => false, 'firstheading' => false];
         if (!empty($flags)) {
             foreach ($flags as $flag) {
                 if (array_key_exists($flag, $outFlags)) {
